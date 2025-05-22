@@ -1,5 +1,9 @@
+'use client'
+
 import { useEffect, useState } from "react";
 import { Button, TextField } from "@mui/material";
+import createClient from 'openapi-fetch';
+import type { paths } from '@/lib/api/schema';
 
 export class ToDo {
   id: number = 0;
@@ -11,17 +15,20 @@ export class ToDo {
   }
 }
 
+// openapi-fetch
+const client = createClient<paths>({ baseUrl: 'http://localhost:3000' });
+
 export default function ToDoListComponent() {
+
   // ToDoデータ
   const [todolist, setTodolist] = useState<ToDo[]>([])
 
   useEffect(() => {
-    // 元データ(仮)
-    setTodolist([
-      { id: 1, todo: '楽しいお祭り' },
-      { id: 2, todo: '嬉しい会話' },
-      { id: 3, todo: '愛あるふれあい' },
-    ]);
+    // データ取得・設定
+    client.GET('/api/todos', {})
+      .then((res) => {
+        setTodolist(res.data as ToDo[]);
+      })
   }, []);
 
   // todo追加
