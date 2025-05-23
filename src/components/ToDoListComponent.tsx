@@ -16,7 +16,7 @@ export class ToDo {
 }
 
 // openapi-fetch
-const client = createClient<paths>({ baseUrl: 'http://localhost:3000' });
+const client = createClient<paths>({ baseUrl: process.env.NEXT_PUBLIC_API_URL });
 
 export default function ToDoListComponent() {
 
