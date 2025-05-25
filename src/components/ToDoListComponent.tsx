@@ -1,5 +1,9 @@
+'use client'
+
 import { useEffect, useState } from "react";
 import { Button, TextField } from "@mui/material";
+import createClient from 'openapi-fetch';
+import type { paths } from '@/lib/api/schema';
 
 export class ToDo {
   id: number = 0;
@@ -11,53 +15,79 @@ export class ToDo {
   }
 }
 
+// openapi-fetch
+const client = createClient<paths>({ baseUrl: process.env.NEXT_PUBLIC_API_URL });
+
 export default function ToDoListComponent() {
+
   // ToDoデータ
   const [todolist, setTodolist] = useState<ToDo[]>([])
 
   useEffect(() => {
-    // 元データ(仮)
-    setTodolist([
-      { id: 1, todo: '楽しいお祭り' },
-      { id: 2, todo: '嬉しい会話' },
-      { id: 3, todo: '愛あるふれあい' },
-    ]);
+    // データ取得・設定
+    client.GET('/api/todos', {})
+      .then((res) => {
+        setTodolist(res.data as ToDo[]);
+      })
   }, []);
 
   // todo追加
   function handleAdd(todo: string): void {
-    let newId = 0;
-    todolist.forEach((item) => {
-      if (item.id > newId) {
-        newId = item.id;
+    const newTodo = new ToDo(0, todo);
+
+    // [API]: 追加
+    client.POST("/api/todos", {
+      body: newTodo,
+    }).then((res) => {
+      if (res.data) {
+        const newTodo = new ToDo(res.data.id, res.data.todo);
+        setTodolist([...todolist, newTodo]);
       }
-    })
-    setTodolist([...todolist, new ToDo(++newId, todo)]);
+    });
   }
 
   // todo 編集
   function handleEdit(id: number, todo: string): void {
     //
-    const newToDoList = todolist.map((todoItem) => {
-      if (todoItem.id === id) {
-        return new ToDo(id, todo);
-      } else {
-        return todoItem;
+    const newTodo = new ToDo(id, todo);
+
+    // [API]: 更新
+    client.PATCH('/api/todos/{id}', {
+      params: {
+        path: {
+          id: id.toString(),
+        },
+      },
+      body: newTodo,
+    }).then((res) => {
+      if (res.data) {
+        const newToDoList = todolist.map((todoItem) => {
+          if (todoItem.id === id) {
+            return new ToDo(res.data.id, res.data.todo);
+          } else {
+            return todoItem;
+          }
+        });
+        setTodolist(newToDoList);
       }
-    });
-    setTodolist(newToDoList);
+    })
   }
 
   // todo 削除
   function handleRemove(id: number) {
-    //
-    const newToDoList: ToDo[] = [];
-    todolist.forEach((item: ToDo) => {
-      if (item.id !== id) {
-        newToDoList.push(item);
+    // [API]: 更新
+    client.DELETE('/api/todos/{id}', {
+      params: {
+        path: {
+          id: id.toString(),
+        },
+      },
+    }).then((res) => {
+      if (res.data) {
+        const newToDoList = todolist.filter((item) => item.id !== id);
+        setTodolist(newToDoList);
       }
     })
-    setTodolist(newToDoList);
   }
 
   return (
